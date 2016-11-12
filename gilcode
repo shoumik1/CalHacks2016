@@ -1,0 +1,123 @@
+from instagram.client import InstagramAPI
+import sys
+import pandas as pd
+import datetime
+#import oauth2.py
+
+client_id = '0efe33ef2a4f4d6da9f0ad6ef59c66e0'
+client_secret = '019491546c624a10ac4d011fc686800c'
+redirect_uri = "http://localhost:8000"
+
+#predefined scope
+raw_scope = "public_content".strip()
+scope = raw_scope.split(' ')
+if not scope or scope == [""]:
+    scope = ["basic"]
+
+# #creating api
+# api = InstagramAPI(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+
+# #getting access token and user_id
+# redirect_uri = api.get_authorize_login_url(scope = scope)
+# print ("Visit this page and authorize access in your browser: "+ redirect_uri)
+# code = (str(input("Paste in code in query string after redirect: ").strip()))
+# access = api.exchange_code_for_access_token(code)
+
+# access_token = access[0]
+# user_id = access[1]['id']
+
+# print(access_token, user_id)
+
+access_token = "333432413.0efe33e.9dd42cf108984355aba87745762a0b6e"
+user_id = "333432413"
+
+#recreating api and running code
+api = InstagramAPI(access_token = access_token, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+recent_media, next_ = api.user_recent_media(user_id=user_id, count=10)
+#for media in recent_media:
+   #print (media.caption.text)
+
+#direct your user to instagram's authorization URL
+#the user grants authorization
+#instagram redirects the user back to your site with a code
+#send the code back to instagram in exchange for the token
+
+#--------------------------------------------------------
+
+
+#api = InstagramAPI(client_id=client_id, client_secret=client_secret)
+
+#get a list of posts at a particular location where lat and long are provided as
+#command line arguments 
+user = api.user(user_id)
+data = api.user_liked_media()
+print(data)
+
+#ORIGINAL: data = api.media_search(count=100, lat=lat, lng=lng)
+
+#data is a list of Media objects, where each obj is made up of metadata
+#above code requests 100 recent posts of pictures taken within a 1000 m radius of location
+
+#ORIGINAL: def table_InstaData(mediaList, query_lat, query_lon):
+def table_InstaData(mediaList):
+	"""
+	returns a list of dictionaries to be converted to a dataframe,
+	given a list of media objects from the Instagram API
+	"""
+
+	#initialize a list of dicts that will hold row data from this query
+	l_of_d = []
+	# print(mediaList)
+	for media in mediaList[0]:
+		#for each media in mediaList, get the lat and lng, save into database
+		# #the return will also contain videos, that I don't want
+		# if media.type == 'image':
+		# 	text = ""
+		# 	tags = []
+
+		#Not all media contains captions or tags
+		# try:
+		# 	text = media.caption.text
+		# except AttributeError:
+		# 	text = ""
+
+		# try:
+		# 	tags = media.tags
+		# except AttributeError:
+		# 	tags = []
+		location = None
+		location_name = ''
+		for media in mediaList:
+			try:
+				location = media.location 
+				print(location.name)
+			except AttributeError:
+				pass
+
+		l_of_d.append({"id":user_id,
+			"media_id":media.id,
+			"user":user.username,
+			"image_url":media.images['low_resolution'].url,
+			"caption":media.caption,
+			#"like_count":media.like_count,
+			#"query_lat":query_lat,
+			#"query_lon":query_lon,
+			#"information":api.media(media.id)
+			"location":location
+			#"hashtags":tags
+			})
+	return l_of_d
+	#doesn't save picture, doesn't matter 
+
+recent_Media = table_InstaData(data)
+	#making use of the data 
+
+#put the list and organized data into a dataframe
+df = pd.DataFrame(recent_Media)
+#put together a file name
+#fname = argv[3] + "_" + str(lat) + "_" + str(lng) + "_" + str(datetime.date.today()) + ".pkl"
+
+#save the data
+#df.to_pickle(fname)
+
+
